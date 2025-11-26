@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - Employee Task Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .task-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid;
+        }
+        .task-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .priority-high { border-left-color: #ef4444; }
+        .priority-medium { border-left-color: #f59e0b; }
+        .priority-low { border-left-color: #10b981; }
+        .status-pending { background-color: #fef3c7; }
+        .status-in-progress { background-color: #dbeafe; }
+        .status-completed { background-color: #d1fae5; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .chatbot-window {
+            width: 350px;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        .chatbot-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        .message {
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+        .message.user {
+            background: #3b82f6;
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+        .message.bot {
+            background: #f3f4f6;
+            color: #374151;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        .quick-action {
+            background: #e5e7eb;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .quick-action:hover {
+            background: #d1d5db;
+        }
+        .chatbot-toggle {
+            width: 60px;
+            height: 60px;
+            background: #3b82f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            transition: all 0.3s ease;
+        }
+        .chatbot-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.6);
+        }
+        .deadline-warning {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 8px 0;
+        }
+        .urgent {
+            background: #fee2e2;
+            border: 1px solid #ef4444;
+        }
+        
+        /* Navigation Highlight Styles */
+        .navigation-highlight {
+            position: relative;
+            z-index: 999;
+        }
+        
+        .blink-element {
+            animation: blink 1s infinite;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+            border: 2px solid #3b82f6;
+        }
+        
+        @keyframes blink {
+            0%, 50% {
+                opacity: 1;
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
+            }
+            51%, 100% {
+                opacity: 0.7;
+                box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+            }
+        }
+        
+        .arrow-pointer {
+            position: absolute;
+            z-index: 1001;
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        /* Employee Directory Styles */
+        .employee-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .employee-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .employee-card.active {
+            border: 2px solid #3b82f6;
+            background-color: #f0f9ff;
+        }
+        
+        .task-count-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .employee-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .employee-modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 800px;
+            max-height: 90vh;
+            width: 90%;
+            overflow: hidden;
+        }
+        
+        .employee-tasks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .sort-arrow {
+            margin-left: 4px;
+            font-size: 12px;
+        }
+
+        .sort-arrow.asc::after {
+            content: " ↑";
+        }
+
+        .sort-arrow.desc::after {
+            content: " ↓";
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // Employee Data
+        const employeeData = [
+            {
+                id: 1,
+                name: 'Admin User',
+                email: 'admin@company.com',
+                role: 'admin',
+                department: 'Management',
+                avatar: '👑',
+                joinDate: '2022-01-15',
+                performance: 'Excellent'
+            },
+            {
+                id: 2,
+                name: 'John Doe',
+                email: 'john@company.com',
+                role: 'employee',
+                department: 'Development',
+                avatar: '👨‍💻',
+                joinDate: '2023-03-20',
+                performance: 'Good'
+            },
+            {
+                id: 3,
+                name: 'Sarah Wilson',
+                email: 'sarah@company.com',
+                role: 'manager',
+                department: 'Development',
+                avatar: '👩‍💼',
+                joinDate: '2022-08-10',
+                performance: 'Excellent'
+            },
+            {
+                id: 4,
+                name: 'Mike Johnson',
+                email: 'mike@company.com',
+                role: 'employee',
+                department: 'Design',
+                avatar: '🎨',
+                joinDate: '2023-06-15',
+                performance: 'Good'
+            },
+            {
+                id: 5,
+                name: 'Emily Chen',
+                email: 'emily@company.com',
+                role: 'employee',
+                department: 'Development',
+                avatar: '👩‍💻',
+                joinDate: '2023-09-01',
+                performance: 'Excellent'
+            },
+            {
+                id: 6,
+                name: 'David Brown',
+                email: 'david@company.com',
+                role: 'employee',
+                department: 'QA',
+                avatar: '🔍',
+                joinDate: '2023-02-28',
+                performance: 'Good'
+            }
+        ];
+
+        // Initialize sample data
+        const initializeSampleData = () => {
+            if (!localStorage.getItem('tasks')) {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const dayAfterTomorrow = new Date();
+                dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+                
+                const sampleTasks = [
+                    {
+                        id: 1,
+                        title: 'Design New Dashboard UI',
+                        description: 'Create modern dashboard design with analytics components',
+                        priority: 'high',
+                        status: 'in-progress',
+                        assignee: 'John Doe',
+                        dueDate: tomorrow.toISOString().split('T')[0],
+                        createdAt: new Date().toISOString(),
+                        tags: ['design', 'ui/ux']
+                    },
+                    {
+                        id: 2,
+                        title: 'Backend API Development',
+                        description: 'Develop REST APIs for task management system',
+                        priority: 'medium',
+                        status: 'pending',
+                        assignee: 'Sarah Wilson',
+                        dueDate: '2024-02-20',
+                        createdAt: new Date().toISOString(),
+                        tags: ['backend', 'api']
+                    },
+                    {
+                        id: 3,
+                        title: 'Database Schema Design',
+                        description: 'Design and implement database schema',
+                        priority: 'high',
+                        status: 'completed',
+                        assignee: 'Admin User',
+                        dueDate: '2024-01-25',
+                        createdAt: new Date().toISOString(),
+                        tags: ['database', 'design']
+                    },
+                    {
+                        id: 4,
+                        title: 'Mobile App Development',
+                        description: 'Build React Native mobile application',
+                        priority: 'high',
+                        status: 'in-progress',
+                        assignee: 'John Doe',
+                        dueDate: '2024-03-01',
+                        createdAt: new Date().toISOString(),
+                        tags: ['mobile', 'react-native']
+                    },
+                    {
+                        id: 5,
+                        title: 'User Testing',
+                        description: 'Conduct comprehensive user testing',
+                        priority: 'medium',
+                        status: 'pending',
+                        assignee: 'David Brown',
+                        dueDate: '2024-02-28',
+                        createdAt: new Date().toISOString(),
+                        tags: ['testing', 'qa']
+                    },
+                    {
+                        id: 6,
+                        title: 'UI/UX Design Review',
+                        description: 'Review and improve user interface designs',
+                        priority: 'low',
+                        status: 'pending',
+                        assignee: 'Mike Johnson',
+                        dueDate: '2024-02-22',
+                        createdAt: new Date().toISOString(),
+                        tags: ['design', 'ui/ux']
+                    },
+                    {
+                        id: 7,
+                        title: 'Performance Optimization',
+                        description: 'Optimize application performance',
+                        priority: 'medium',
+                        status: 'in-progress',
+                        assignee: 'Emily Chen',
+                        dueDate: '2024-03-05',
+                        createdAt: new Date().toISOString(),
+                        tags: ['performance', 'optimization']
+                    }
+                ];
+                localStorage.setItem('tasks', JSON.stringify(sampleTasks));
+            }
+        };
+
+        // Navigation Guide Component
+        const NavigationGuide = ({ target, message, onComplete }) => {
+            const [visible, setVisible] = useState(true);
+
+            useEffect(() => {
+                const timer = setTimeout(() => {
+                    setVisible(false);
+                    setTimeout(() => onComplete(), 500);
+                }, 3000); // Changed to 3 seconds
+
+                return () => clearTimeout(timer);
+            }, [onComplete]);
+
+            if (!visible) return null;
+
+            const getArrowPosition = () => {
+                switch (target) {
+                    case 'stats':
+                        return { top: '120px', left: '50%', transform: 'translateX(-50%)' };
+                    case 'search':
+                        return { top: '400px', right: '300px' };
+                    case 'create':
+                        return { top: '400px', right: '150px' };
+                    case 'tasks':
+                        return { top: '500px', left: '50%', transform: 'translateX(-50%)' };
+                    case 'employees':
+                        return { top: '120px', right: '50px' };
+                    default:
+                        return { top: '100px', left: '50%' };
+                }
+            };
+
+            const getArrowDirection = () => {
+                switch (target) {
+                    case 'stats':
+                        return 'down';
+                    case 'search':
+                        return 'left';
+                    case 'create':
+                        return 'left';
+                    case 'tasks':
+                        return 'up';
+                    case 'employees':
+                        return 'left';
+                    default:
+                        return 'down';
+                }
+            };
+
+            const arrowStyle = getArrowPosition();
+            const direction = getArrowDirection();
+
+            return (
+                <div className="fixed inset-0 z-1000 pointer-events-none">
+                    <div 
+                        className="arrow-pointer"
+                        style={arrowStyle}
+                    >
+                        <div className="flex items-center justify-center">
+                            <div className="bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg mb-2">
+                                {message}
+                            </div>
+                        </div>
+                        <div className={`w-8 h-8 text-blue-600 mx-auto ${
+                            direction === 'down' ? 'transform rotate-180' :
+                            direction === 'left' ? 'transform rotate-90' :
+                            direction === 'right' ? 'transform -rotate-90' : ''
+                        }`}>
+                            ▼
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Employee Directory Component with Sorting
+        const EmployeeDirectory = ({ employees, tasks, onEmployeeClick, navigationTarget }) => {
+            const [sortBy, setSortBy] = useState('name');
+            const [sortOrder, setSortOrder] = useState('asc');
+
+            const getEmployeeTasks = (employeeName) => {
+                return tasks.filter(task => task.assignee === employeeName);
+            };
+
+            const getTaskStats = (employeeName) => {
+                const employeeTasks = getEmployeeTasks(employeeName);
+                const today = new Date();
+                
+                return {
+                    total: employeeTasks.length,
+                    pending: employeeTasks.filter(t => t.status === 'pending').length,
+                    inProgress: employeeTasks.filter(t => t.status === 'in-progress').length,
+                    completed: employeeTasks.filter(t => t.status === 'completed').length,
+                    overdue: employeeTasks.filter(t => new Date(t.dueDate) < today && t.status !== 'completed').length,
+                    upcomingDeadlines: employeeTasks.filter(t => {
+                        const dueDate = new Date(t.dueDate);
+                        const diffTime = dueDate - today;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        return diffDays <= 7 && diffDays >= 0 && t.status !== 'completed';
+                    }).length
+                };
+            };
+
+            const getSortValue = (employee, sortBy) => {
+                const stats = getTaskStats(employee.name);
+                
+                switch (sortBy) {
+                    case 'name':
+                        return employee.name.toLowerCase();
+                    case 'totalTasks':
+                        return stats.total;
+                    case 'completedTasks':
+                        return stats.completed;
+                    case 'pendingTasks':
+                        return stats.pending;
+                    case 'remainingTasks':
+                        return stats.pending + stats.inProgress;
+                    case 'upcomingDeadlines':
+                        return stats.upcomingDeadlines;
+                    case 'overdueTasks':
+                        return stats.overdue;
+                    case 'department':
+                        return employee.department.toLowerCase();
+                    case 'performance':
+                        const performanceScore = {
+                            'Excellent': 3,
+                            'Good': 2,
+                            'Average': 1
+                        };
+                        return performanceScore[employee.performance] || 0;
+                    default:
+                        return employee.name.toLowerCase();
+                }
+            };
+
+            const sortedEmployees = [...employees].sort((a, b) => {
+                const aValue = getSortValue(a, sortBy);
+                const bValue = getSortValue(b, sortBy);
+                
+                if (sortOrder === 'asc') {
+                    return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+                } else {
+                    return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+                }
+            });
+
+            const handleSort = (newSortBy) => {
+                if (sortBy === newSortBy) {
+                    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                } else {
+                    setSortBy(newSortBy);
+                    setSortOrder('asc');
+                }
+            };
+
+            const getSortArrow = (column) => {
+                if (sortBy === column) {
+                    return sortOrder === 'asc' ? 'asc' : 'desc';
+                }
+                return '';
+            };
+
+            return (
+                <div className={`bg-white rounded-lg shadow-sm border p-6 ${navigationTarget === 'employees' ? 'blink-element navigation-highlight' : ''}`}>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
+                        <span className="text-sm text-gray-500">{employees.length} employees</span>
+                    </div>
+
+                    {/* Sorting Controls */}
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Sort by:</label>
+                        <div className="flex flex-wrap gap-2">
+                            {[
+                                { key: 'name', label: 'Name' },
+                                { key: 'totalTasks', label: 'Total Tasks' },
+                                { key: 'completedTasks', label: 'Completed' },
+                                { key: 'pendingTasks', label: 'Pending' },
+                                { key: 'remainingTasks', label: 'Remaining' },
+                                { key: 'upcomingDeadlines', label: 'Deadlines' },
+                                { key: 'overdueTasks', label: 'Overdue' },
+                                { key: 'department', label: 'Department' },
+                                { key: 'performance', label: 'Performance' }
+                            ].map((sortOption) => (
+                                <button
+                                    key={sortOption.key}
+                                    onClick={() => handleSort(sortOption.key)}
+                                    className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+                                        sortBy === sortOption.key
+                                            ? 'bg-blue-100 text-blue-700 border-blue-300'
+                                            : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {sortOption.label}
+                                    <span className={`sort-arrow ${getSortArrow(sortOption.key)}`}></span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
+                        {sortedEmployees.map(employee => {
+                            const taskStats = getTaskStats(employee.name);
+                            const taskCount = taskStats.total;
+                            
+                            return (
+                                <div
+                                    key={employee.id}
+                                    className={`employee-card bg-gray-50 rounded-lg p-4 border cursor-pointer relative ${
+                                        navigationTarget === 'employees' ? 'blink-element' : ''
+                                    }`}
+                                    onClick={() => onEmployeeClick(employee)}
+                                >
+                                    {taskCount > 0 && (
+                                        <div className="task-count-badge">
+                                            {taskCount}
+                                        </div>
+                                    )}
+                                    
+                                    <div className="flex items-center space-x-3 mb-3">
+                                        <div className="text-2xl">{employee.avatar}</div>
+                                        <div className="flex-1">
+                                            <h3 className="font-semibold text-gray-800">{employee.name}</h3>
+                                            <p className="text-sm text-gray-600">{employee.department} • {employee.role}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-gray-500">Performance:</span>
+                                            <span className={`font-medium ${
+                                                employee.performance === 'Excellent' ? 'text-green-600' :
+                                                employee.performance === 'Good' ? 'text-blue-600' :
+                                                'text-yellow-600'
+                                            }`}>
+                                                {employee.performance}
+                                            </span>
+                                        </div>
+                                        
+                                        {taskCount > 0 ? (
+                                            <div className="pt-2 border-t">
+                                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Total:</span>
+                                                        <span className="font-medium">{taskStats.total}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Completed:</span>
+                                                        <span className="font-medium text-green-600">{taskStats.completed}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Pending:</span>
+                                                        <span className="font-medium text-yellow-600">{taskStats.pending}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">In Progress:</span>
+                                                        <span className="font-medium text-blue-600">{taskStats.inProgress}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Deadlines:</span>
+                                                        <span className="font-medium text-orange-600">{taskStats.upcomingDeadlines}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-500">Overdue:</span>
+                                                        <span className="font-medium text-red-600">{taskStats.overdue}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="pt-2 border-t">
+                                                <div className="text-center text-xs text-gray-500 py-1">
+                                                    No tasks assigned
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Current Sort Info */}
+                    <div className="mt-4 text-xs text-gray-500 text-center">
+                        Sorted by: {sortBy.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} 
+                        ({sortOrder === 'asc' ? 'Ascending' : 'Descending'})
+                    </div>
+                </div>
+            );
+        };
+
+        // Employee Tasks Modal Component
+        const EmployeeTasksModal = ({ employee, tasks, onClose }) => {
+            if (!employee) return null;
+
+            const employeeTasks = tasks.filter(task => task.assignee === employee.name);
+            const taskStats = {
+                total: employeeTasks.length,
+                pending: employeeTasks.filter(t => t.status === 'pending').length,
+                inProgress: employeeTasks.filter(t => t.status === 'in-progress').length,
+                completed: employeeTasks.filter(t => t.status === 'completed').length,
+                overdue: employeeTasks.filter(t => new Date(t.dueDate) < new Date() && t.status !== 'completed').length,
+                upcomingDeadlines: employeeTasks.filter(t => {
+                    const dueDate = new Date(t.dueDate);
+                    const today = new Date();
+                    const diffTime = dueDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays <= 7 && diffDays >= 0 && t.status !== 'completed';
+                }).length
+            };
+
+            const getDaysUntilDue = (dueDate) => {
+                const today = new Date();
+                const due = new Date(dueDate);
+                const diffTime = due - today;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            };
+
+            return (
+                <div className="employee-modal fade-in">
+                    <div className="employee-modal-content">
+                        <div className="flex justify-between items-center p-6 border-b">
+                            <div className="flex items-center space-x-4">
+                                <div className="text-3xl">{employee.avatar}</div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900">{employee.name}</h2>
+                                    <p className="text-gray-600">{employee.role} • {employee.department}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="text-gray-400 hover:text-gray-600 text-2xl"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            {/* Employee Stats */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                <div className="bg-blue-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-blue-600">{taskStats.total}</div>
+                                    <div className="text-sm text-blue-600">Total Tasks</div>
+                                </div>
+                                <div className="bg-yellow-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-yellow-600">{taskStats.pending}</div>
+                                    <div className="text-sm text-yellow-600">Pending</div>
+                                </div>
+                                <div className="bg-blue-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-blue-600">{taskStats.inProgress}</div>
+                                    <div className="text-sm text-blue-600">In Progress</div>
+                                </div>
+                                <div className="bg-green-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-green-600">{taskStats.completed}</div>
+                                    <div className="text-sm text-green-600">Completed</div>
+                                </div>
+                                <div className="bg-orange-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-orange-600">{taskStats.upcomingDeadlines}</div>
+                                    <div className="text-sm text-orange-600">Upcoming Deadlines</div>
+                                </div>
+                                <div className="bg-red-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-red-600">{taskStats.overdue}</div>
+                                    <div className="text-sm text-red-600">Overdue</div>
+                                </div>
+                                <div className="bg-purple-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-purple-600">
+                                        {taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0}%
+                                    </div>
+                                    <div className="text-sm text-purple-600">Completion Rate</div>
+                                </div>
+                                <div className="bg-gray-50 p-4 rounded-lg text-center">
+                                    <div className="text-2xl font-bold text-gray-600">
+                                        {taskStats.pending + taskStats.inProgress}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Remaining</div>
+                                </div>
+                            </div>
+                            
+                            {/* Employee Details */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-gray-900">Employee Information</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Email:</span>
+                                            <span className="font-medium">{employee.email}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Join Date:</span>
+                                            <span className="font-medium">{new Date(employee.joinDate).toLocaleDateString()}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Performance:</span>
+                                            <span className={`font-medium ${
+                                                employee.performance === 'Excellent' ? 'text-green-600' :
+                                                employee.performance === 'Good' ? 'text-blue-600' :
+                                                'text-yellow-600'
+                                            }`}>
+                                                {employee.performance}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-gray-900">Workload Summary</h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Workload Level:</span>
+                                            <span className={`font-medium ${
+                                                taskStats.total === 0 ? 'text-gray-600' :
+                                                taskStats.total <= 2 ? 'text-green-600' :
+                                                taskStats.total <= 5 ? 'text-yellow-600' :
+                                                'text-red-600'
+                                            }`}>
+                                                {taskStats.total === 0 ? 'No tasks' :
+                                                 taskStats.total <= 2 ? 'Light' :
+                                                 taskStats.total <= 5 ? 'Moderate' : 'Heavy'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">On Track:</span>
+                                            <span className={`font-medium ${
+                                                taskStats.overdue === 0 ? 'text-green-600' : 'text-red-600'
+                                            }`}>
+                                                {taskStats.overdue === 0 ? 'Yes' : 'No'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-500">Productivity Score:</span>
+                                            <span className="font-medium">
+                                                {taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 100}%
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {/* Tasks List */}
+                            <div>
+                                <h3 className="font-semibold text-gray-900 mb-4">Assigned Tasks ({employeeTasks.length})</h3>
+                                
+                                {employeeTasks.length > 0 ? (
+                                    <div className="employee-tasks-grid">
+                                        {employeeTasks.map(task => {
+                                            const daysUntilDue = getDaysUntilDue(task.dueDate);
+                                            const isOverdue = daysUntilDue < 0 && task.status !== 'completed';
+                                            
+                                            return (
+                                                <div key={task.id} className={`task-card bg-white rounded-lg p-4 shadow-sm border ${task.status === 'completed' ? 'status-completed' : task.status === 'in-progress' ? 'status-in-progress' : 'status-pending'} priority-${task.priority}`}>
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="font-semibold text-gray-800 flex-1">{task.title}</h4>
+                                                        <span className={`text-xs px-2 py-1 rounded ${
+                                                            task.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                                            'bg-green-100 text-green-800'
+                                                        }`}>
+                                                            {task.priority}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{task.description}</p>
+                                                    
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className={`px-2 py-1 rounded ${
+                                                            task.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                            task.status === 'in-progress' ? 'bg-blue-100 text-blue-800' :
+                                                            'bg-yellow-100 text-yellow-800'
+                                                        }`}>
+                                                            {task.status}
+                                                        </span>
+                                                        <span className={`${
+                                                            isOverdue ? 'text-red-600 font-medium' :
+                                                            daysUntilDue <= 1 ? 'text-orange-600' : 'text-gray-500'
+                                                        }`}>
+                                                            {isOverdue ? `${Math.abs(daysUntilDue)} days overdue` :
+                                                             daysUntilDue === 0 ? 'Due today' :
+                                                             daysUntilDue === 1 ? 'Due tomorrow' :
+                                                             `Due in ${daysUntilDue} days`}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    {task.tags && task.tags.length > 0 && (
+                                                        <div className="flex flex-wrap gap-1 mt-2">
+                                                            {task.tags.map(tag => (
+                                                                <span key={tag} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                                                    {tag}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <div className="text-4xl mb-2">📝</div>
+                                        <p className="text-gray-600">No tasks assigned to {employee.name}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // AI Chatbot Service
+        const AIChatbotService = {
+            async processMessage(message, tasks, user) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const response = this.generateResponse(message.toLowerCase(), tasks, user);
+                        resolve(response);
+                    }, 1000);
+                });
+            },
+
+            generateResponse(message, tasks, user) {
+                // Navigation commands
+                if (message.includes('help') || message.includes('what can you do')) {
+                    return {
+                        text: "I'm your TaskFlow assistant! I can help you:\n\n• Show your tasks and deadlines 📋\n• Navigate to different sections 🧭\n• Create new tasks ➕\n• Check task status 📊\n• Set reminders for deadlines ⏰\n• Search for specific tasks 🔍\n• Show team members and their tasks 👥\n\nJust tell me what you need help with!",
+                        action: null,
+                        quickActions: ['Show my tasks', 'Create new task', 'Check deadlines', 'Show team members'],
+                        navigation: null
+                    };
+                }
+
+                if (message.includes('show') && (message.includes('task') || message.includes('my task'))) {
+                    return {
+                        text: "Let me show you where to find your tasks! Look at the tasks grid below. I'll highlight it for you.",
+                        action: 'show_tasks',
+                        quickActions: ['Show pending tasks', 'Show completed tasks', 'Show overdue tasks', 'Create new task'],
+                        navigation: 'tasks'
+                    };
+                }
+
+                if (message.includes('stat') || message.includes('overview')) {
+                    return {
+                        text: "Here's your task overview! Check the statistics cards showing your total tasks, pending, in progress, and completed tasks.",
+                        action: 'show_stats',
+                        quickActions: ['Show tasks', 'Check deadlines', 'Create task'],
+                        navigation: 'stats'
+                    };
+                }
+
+                if (message.includes('create') || message.includes('new task')) {
+                    return {
+                        text: "I'll show you where to create a new task! Look for the 'New Task' button in the controls section.",
+                        action: 'create_task',
+                        quickActions: ['Create task with high priority', 'Set reminder', 'Back to tasks'],
+                        navigation: 'create'
+                    };
+                }
+
+                if (message.includes('search') || message.includes('find')) {
+                    return {
+                        text: "Let me show you the search functionality! You can search tasks by title or description using the search bar.",
+                        action: 'show_search',
+                        quickActions: ['Search pending', 'Search high priority', 'Clear search'],
+                        navigation: 'search'
+                    };
+                }
+
+                if (message.includes('team') || message.includes('employee') || message.includes('member')) {
+                    return {
+                        text: "Let me show you the team directory! You can see all team members and their assigned tasks here. You can also sort them by different criteria.",
+                        action: 'show_employees',
+                        quickActions: ['Show John tasks', 'Show Sarah tasks', 'Show all employees'],
+                        navigation: 'employees'
+                    };
+                }
+
+                if (message.includes('deadline') || message.includes('due') || message.includes('reminder')) {
+                    const upcomingTasks = this.getUpcomingDeadlines(tasks);
+                    if (upcomingTasks.length > 0) {
+                        let responseText = "Here are your upcoming deadlines:\n\n";
+                        upcomingTasks.forEach(task => {
+                            const daysLeft = this.getDaysUntilDue(task.dueDate);
+                            responseText += `• "${task.title}" - Due in ${daysLeft} days (${task.priority} priority)\n`;
+                        });
+                        responseText += "\nI'll remind you about these deadlines!";
+                        return {
+                            text: responseText,
+                            action: 'show_deadlines',
+                            quickActions: ['Show all tasks', 'Create reminder', 'Mark as completed'],
+                            navigation: null
+                        };
+                    } else {
+                        return {
+                            text: "Great news! You don't have any upcoming deadlines in the next 7 days. 🎉",
+                            action: null,
+                            quickActions: ['Create new task', 'Check all tasks', 'How to set deadlines?'],
+                            navigation: null
+                        };
+                    }
+                }
+
+                if (message.includes('filter') || message.includes('category')) {
+                    return {
+                        text: "You can filter tasks by status using the dropdown next to the search bar. I'll highlight it for you!",
+                        action: 'show_filters',
+                        quickActions: ['Show pending only', 'Show high priority', 'Show my tasks', 'Clear filters'],
+                        navigation: 'search'
+                    };
+                }
+
+                if (message.includes('hi') || message.includes('hello') || message.includes('hey')) {
+                    return {
+                        text: `Hello ${user?.name || 'there'}! 👋 I'm your TaskFlow AI assistant. I can help you navigate the app and highlight different sections. Try asking me to "show tasks" or "show team members"!`,
+                        action: null,
+                        quickActions: ['Show my tasks', 'Check deadlines', 'Show team members', 'Help'],
+                        navigation: null
+                    };
+                }
+
+                // Default response
+                return {
+                    text: "I'm here to help you navigate TaskFlow! You can ask me to:\n\n• Show your tasks 📋\n• Point to statistics 📊\n• Help create new tasks ➕\n• Find the search bar 🔍\n• Check deadlines ⏰\n• Show team members 👥\n\nWhat would you like me to show you?",
+                    action: null,
+                    quickActions: ['Show all tasks', 'Check deadlines', 'Show team members', 'Help'],
+                    navigation: null
+                };
+            },
+
+            getUpcomingDeadlines(tasks) {
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                
+                return tasks.filter(task => {
+                    const dueDate = new Date(task.dueDate);
+                    return dueDate >= today && dueDate <= nextWeek && task.status !== 'completed';
+                }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            },
+
+            getDaysUntilDue(dueDate) {
+                const today = new Date();
+                const due = new Date(dueDate);
+                const diffTime = due - today;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+        };
+
+        // API Service
+        const TaskManagementAPI = {
+            async login(email, password) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const users = [
+                            { id: 1, email: 'admin@company.com', password: 'admin123', role: 'admin', name: 'Admin User' },
+                            { id: 2, email: 'john@company.com', password: 'user123', role: 'employee', name: 'John Doe' },
+                            { id: 3, email: 'sarah@company.com', password: 'user123', role: 'manager', name: 'Sarah Wilson' }
+                        ];
+                        
+                        const user = users.find(u => u.email === email && u.password === password);
+                        if (user) {
+                            localStorage.setItem('user', JSON.stringify(user));
+                            resolve({ success: true, user });
+                        } else {
+                            resolve({ success: false, error: 'Invalid credentials' });
+                        }
+                    }, 500);
+                });
+            },
+
+            async getTasks() {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                        resolve({ success: true, data: tasks });
+                    }, 300);
+                });
+            },
+
+            async createTask(taskData) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                        const newTask = {
+                            id: Date.now(),
+                            ...taskData,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        tasks.push(newTask);
+                        localStorage.setItem('tasks', JSON.stringify(tasks));
+                        resolve({ success: true, data: newTask });
+                    }, 300);
+                });
+            },
+
+            async updateTask(taskId, updates) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        const tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                        const taskIndex = tasks.findIndex(t => t.id === taskId);
+                        if (taskIndex !== -1) {
+                            tasks[taskIndex] = { 
+                                ...tasks[taskIndex], 
+                                ...updates, 
+                                updatedAt: new Date().toISOString() 
+                            };
+                            localStorage.setItem('tasks', JSON.stringify(tasks));
+                            resolve({ success: true, data: tasks[taskIndex] });
+                        }
+                        resolve({ success: false, error: 'Task not found' });
+                    }, 300);
+                });
+            },
+
+            async deleteTask(taskId) {
+                return new Promise((resolve) => {
+                    setTimeout(() => {
+                        let tasks = JSON.parse(localStorage.getItem('tasks') || '[]');
+                        tasks = tasks.filter(t => t.id !== taskId);
+                        localStorage.setItem('tasks', JSON.stringify(tasks));
+                        resolve({ success: true });
+                    }, 300);
+                });
+            }
+        };
+
+        // AI Chatbot Component
+        const AIChatbot = ({ tasks, user, onShowTasks, onCreateTask, onShowDeadlines, onShowEmployees }) => {
+            const [isOpen, setIsOpen] = useState(false);
+            const [messages, setMessages] = useState([]);
+            const [inputMessage, setInputMessage] = useState('');
+            const [isLoading, setIsLoading] = useState(false);
+            const [navigationTarget, setNavigationTarget] = useState(null);
+            const [navigationMessage, setNavigationMessage] = useState('');
+            const messagesEndRef = useRef(null);
+
+            useEffect(() => {
+                if (isOpen && messages.length === 0) {
+                    // Show welcome message when chatbot opens
+                    const welcomeMessage = {
+                        text: `Hello ${user?.name || 'there'}! 👋 I'm your TaskFlow AI assistant. I can help you navigate the app, highlight sections, and manage your tasks. Try asking me to "show tasks" or "show team members"!`,
+                        type: 'bot',
+                        quickActions: ['Show my tasks', 'Where to search?', 'Show team members', 'Help'],
+                        navigation: null
+                    };
+                    setMessages([welcomeMessage]);
+                }
+            }, [isOpen, user]);
+
+            useEffect(() => {
+                scrollToBottom();
+            }, [messages]);
+
+            const scrollToBottom = () => {
+                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            };
+
+            const handleSendMessage = async () => {
+                if (!inputMessage.trim()) return;
+
+                const userMessage = { text: inputMessage, type: 'user' };
+                setMessages(prev => [...prev, userMessage]);
+                setInputMessage('');
+                setIsLoading(true);
+
+                try {
+                    const response = await AIChatbotService.processMessage(inputMessage, tasks, user);
+                    const botMessage = {
+                        text: response.text,
+                        type: 'bot',
+                        quickActions: response.quickActions,
+                        navigation: response.navigation
+                    };
+                    setMessages(prev => [...prev, botMessage]);
+
+                    // Handle navigation
+                    if (response.navigation) {
+                        let message = '';
+                        switch (response.navigation) {
+                            case 'stats':
+                                message = 'Your task statistics are here!';
+                                break;
+                            case 'search':
+                                message = 'Search and filter tasks here!';
+                                break;
+                            case 'create':
+                                message = 'Create new tasks with this button!';
+                                break;
+                            case 'tasks':
+                                message = 'Your tasks are displayed here!';
+                                break;
+                            case 'employees':
+                                message = 'Team members and their tasks are here!';
+                                break;
+                            default:
+                                message = 'Look here!';
+                        }
+                        setNavigationTarget(response.navigation);
+                        setNavigationMessage(message);
+                        
+                        // Auto-clear navigation after 3 seconds
+                        setTimeout(() => {
+                            setNavigationTarget(null);
+                        }, 3000);
+                    }
+
+                    // Handle actions
+                    if (response.action === 'show_tasks') {
+                        onShowTasks();
+                    } else if (response.action === 'create_task') {
+                        onCreateTask();
+                    } else if (response.action === 'show_deadlines') {
+                        onShowDeadlines();
+                    } else if (response.action === 'show_employees') {
+                        onShowEmployees();
+                    }
+                } catch (error) {
+                    const errorMessage = {
+                        text: "Sorry, I'm having trouble processing your request. Please try again.",
+                        type: 'bot',
+                        quickActions: ['Try again', 'Help', 'Show tasks'],
+                        navigation: null
+                    };
+                    setMessages(prev => [...prev, errorMessage]);
+                }
+                setIsLoading(false);
+            };
+
+            const handleQuickAction = (action) => {
+                setInputMessage(action);
+                setTimeout(() => handleSendMessage(), 100);
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === 'Enter') {
+                    handleSendMessage();
+                }
+            };
+
+            const handleNavigationComplete = () => {
+                setNavigationTarget(null);
+            };
+
+            return (
+                <>
+                    <div className="chatbot-container">
+                        {isOpen && (
+                            <div className="chatbot-window fade-in">
+                                <div className="bg-blue-600 text-white p-4 rounded-t-12 flex justify-between items-center">
+                                    <h3 className="font-semibold">TaskFlow Assistant 🤖</h3>
+                                    <button 
+                                        onClick={() => setIsOpen(false)}
+                                        className="text-white hover:text-gray-200"
+                                    >
+                                        ✕
+                                    </button>
+                                </div>
+                                
+                                <div className="chatbot-messages">
+                                    {messages.map((message, index) => (
+                                        <div key={index}>
+                                            <div className={`message ${message.type}`}>
+                                                {message.text.split('\n').map((line, i) => (
+                                                    <div key={i}>{line}</div>
+                                                ))}
+                                            </div>
+                                            {message.quickActions && (
+                                                <div className="quick-actions">
+                                                    {message.quickActions.map((action, i) => (
+                                                        <button
+                                                            key={i}
+                                                            className="quick-action"
+                                                            onClick={() => handleQuickAction(action)}
+                                                        >
+                                                            {action}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                    {isLoading && (
+                                        <div className="message bot">
+                                            <div className="flex space-x-2">
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                                
+                                <div className="p-4 border-t">
+                                    <div className="flex space-x-2">
+                                        <input
+                                            type="text"
+                                            value={inputMessage}
+                                            onChange={(e) => setInputMessage(e.target.value)}
+                                            onKeyPress={handleKeyPress}
+                                            placeholder="Ask me to show you around..."
+                                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            disabled={isLoading}
+                                        />
+                                        <button
+                                            onClick={handleSendMessage}
+                                            disabled={isLoading || !inputMessage.trim()}
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Send
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        
+                        <div 
+                            className="chatbot-toggle fade-in"
+                            onClick={() => setIsOpen(!isOpen)}
+                        >
+                            {isOpen ? '✕' : '🤖'}
+                        </div>
+                    </div>
+
+                    {navigationTarget && (
+                        <NavigationGuide
+                            target={navigationTarget}
+                            message={navigationMessage}
+                            onComplete={handleNavigationComplete}
+                        />
+                    )}
+                </>
+            );
+        };
+
+        // Deadline Reminder Component
+        const DeadlineReminder = ({ tasks }) => {
+            const [showReminder, setShowReminder] = useState(true);
+            
+            const getUpcomingDeadlines = () => {
+                const today = new Date();
+                const nextWeek = new Date();
+                nextWeek.setDate(today.getDate() + 7);
+                
+                return tasks.filter(task => {
+                    const dueDate = new Date(task.dueDate);
+                    return dueDate >= today && dueDate <= nextWeek && task.status !== 'completed';
+                }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+            };
+
+            const getDaysUntilDue = (dueDate) => {
+                const today = new Date();
+                const due = new Date(dueDate);
+                const diffTime = due - today;
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            };
+
+            const upcomingDeadlines = getUpcomingDeadlines();
+
+            if (!showReminder || upcomingDeadlines.length === 0) {
+                return null;
+            }
+
+            return (
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+                    <div className={`deadline-warning ${upcomingDeadlines.some(t => getDaysUntilDue(t.dueDate) <= 2) ? 'urgent' : ''}`}>
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                                <h4 className="font-semibold text-lg mb-2">
+                                    ⏰ Upcoming Deadlines
+                                </h4>
+                                {upcomingDeadlines.map(task => {
+                                    const daysLeft = getDaysUntilDue(task.dueDate);
+                                    return (
+                                        <div key={task.id} className="flex justify-between items-center mb-2 last:mb-0">
+                                            <span className="font-medium">{task.title}</span>
+                                            <span className={`px-2 py-1 rounded text-sm ${
+                                                daysLeft <= 1 ? 'bg-red-100 text-red-800' :
+                                                daysLeft <= 3 ? 'bg-orange-100 text-orange-800' :
+                                                'bg-blue-100 text-blue-800'
+                                            }`}>
+                                                Due in {daysLeft} day{daysLeft !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <button
+                                onClick={() => setShowReminder(false)}
+                                className="text-gray-500 hover:text-gray-700 ml-4"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Login Component
+        const LoginPage = ({ onLogin }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                setError('');
+
+                try {
+                    const result = await TaskManagementAPI.login(email, password);
+                    if (result.success) {
+                        onLogin(result.user);
+                    } else {
+                        setError(result.error);
+                    }
+                } catch (err) {
+                    setError('Login failed. Please try again.');
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+                    <div className="glass-effect rounded-2xl p-8 w-full max-w-md fade-in">
+                        <div className="text-center mb-8">
+                            <h1 className="text-3xl font-bold text-white mb-2">TaskFlow</h1>
+                            <p className="text-blue-100">Employee Task Management System</p>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-white text-sm font-medium mb-2">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                    placeholder="Enter your email"
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-white text-sm font-medium mb-2">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-white/50"
+                                    placeholder="Enter your password"
+                                    required
+                                />
+                            </div>
+                            
+                            {error && (
+                                <div className="bg-red-500/20 border border-red-500/50 text-white p-3 rounded-lg">
+                                    {error}
+                                </div>
+                            )}
+                            
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-white text-blue-600 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors disabled:opacity-50"
+                            >
+                                {loading ? 'Signing in...' : 'Sign In'}
+                            </button>
+                        </form>
+                        
+                        <div className="mt-6 text-center text-blue-200 text-sm">
+                            <p>Demo credentials:</p>
+                            <p>admin@company.com / admin123</p>
+                            <p>john@company.com / user123</p>
+                            <p>sarah@company.com / user123</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // Task Card Component
+        const TaskCard = ({ task, onEdit, onDelete, onStatusChange, highlight = false }) => {
+            const getPriorityColor = (priority) => {
+                switch (priority) {
+                    case 'high': return 'priority-high';
+                    case 'medium': return 'priority-medium';
+                    case 'low': return 'priority-low';
+                    default: return '';
+                }
+            };
+
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'completed': return 'status-completed';
+                    case 'in-progress': return 'status-in-progress';
+                    default: return 'status-pending';
+                }
+            };
+
+            return (
+                <div className={`task-card bg-white rounded-lg p-4 shadow-sm border ${getStatusColor(task.status)} ${getPriorityColor(task.priority)} fade-in ${highlight ? 'blink-element navigation-highlight' : ''}`}>
+                    <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-semibold text-gray-800 flex-1">{task.title}</h3>
+                        <div className="flex space-x-2">
+                            <button 
+                                onClick={() => onEdit(task)} 
+                                className="text-gray-400 hover:text-blue-500"
+                                title="Edit task"
+                            >
+                                ✏️
+                            </button>
+                            <button 
+                                onClick={() => onDelete(task.id)} 
+                                className="text-gray-400 hover:text-red-500"
+                                title="Delete task"
+                            >
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <p className="text-gray-600 text-sm mb-3">{task.description}</p>
+                    
+                    <div className="flex items-center justify-between text-sm mb-3">
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-1">
+                                <span className="capitalize text-gray-500">{task.priority}</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                                <span className="text-gray-500">📅 {new Date(task.dueDate).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center space-x-1">
+                            <span className="text-sm text-gray-600">👤 {task.assignee}</span>
+                        </div>
+                        
+                        <select
+                            value={task.status}
+                            onChange={(e) => onStatusChange(task.id, e.target.value)}
+                            className="text-xs border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                        >
+                            <option value="pending">Pending</option>
+                            <option value="in-progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    {task.tags && task.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-3">
+                            {task.tags.map(tag => (
+                                <span key={tag} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                    {tag}
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Task Modal Component
+        const TaskModal = ({ task, onClose, onSave }) => {
+            const [formData, setFormData] = useState({
+                title: '',
+                description: '',
+                priority: 'medium',
+                status: 'pending',
+                assignee: '',
+                dueDate: ''
+            });
+
+            useEffect(() => {
+                if (task) {
+                    setFormData(task);
+                } else {
+                    // Set default due date to tomorrow
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    setFormData(prev => ({
+                        ...prev,
+                        dueDate: tomorrow.toISOString().split('T')[0]
+                    }));
+                }
+            }, [task]);
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSave(formData);
+            };
+
+            const assigneeOptions = employeeData.map(emp => emp.name);
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg w-full max-w-md">
+                        <div className="flex justify-between items-center p-6 border-b">
+                            <h2 className="text-xl font-semibold">
+                                {task ? 'Edit Task' : 'Create New Task'}
+                            </h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                                ✕
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                                <input
+                                    type="text"
+                                    value={formData.title}
+                                    onChange={(e) => setFormData({...formData, title: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                    rows="3"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                    <select
+                                        value={formData.priority}
+                                        onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                    <select
+                                        value={formData.status}
+                                        onChange={(e) => setFormData({...formData, status: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="pending">Pending</option>
+                                        <option value="in-progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Assignee</label>
+                                    <select
+                                        value={formData.assignee}
+                                        onChange={(e) => setFormData({...formData, assignee: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="">Select assignee</option>
+                                        {assigneeOptions.map(option => (
+                                            <option key={option} value={option}>{option}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.dueDate}
+                                        onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            
+                            <div className="flex justify-end space-x-3 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    className="px-4 py-2 text-gray-600 hover:text-gray-800"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    {task ? 'Update Task' : 'Create Task'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // Dashboard Component
+        const Dashboard = () => {
+            const [tasks, setTasks] = useState([]);
+            const [filter, setFilter] = useState('all');
+            const [search, setSearch] = useState('');
+            const [showModal, setShowModal] = useState(false);
+            const [editingTask, setEditingTask] = useState(null);
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [navigationTarget, setNavigationTarget] = useState(null);
+            const [selectedEmployee, setSelectedEmployee] = useState(null);
+            const [showEmployeeModal, setShowEmployeeModal] = useState(false);
+
+            useEffect(() => {
+                initializeSampleData();
+                const savedUser = localStorage.getItem('user');
+                if (savedUser) {
+                    setUser(JSON.parse(savedUser));
+                }
+                loadTasks();
+            }, []);
+
+            // Auto-clear navigation target after 3 seconds
+            useEffect(() => {
+                if (navigationTarget) {
+                    const timer = setTimeout(() => {
+                        setNavigationTarget(null);
+                    }, 3000);
+                    
+                    return () => clearTimeout(timer);
+                }
+            }, [navigationTarget]);
+
+            const loadTasks = async () => {
+                setLoading(true);
+                try {
+                    const result = await TaskManagementAPI.getTasks();
+                    if (result.success) {
+                        setTasks(result.data);
+                    }
+                } catch (error) {
+                    console.error('Failed to load tasks:', error);
+                }
+                setLoading(false);
+            };
+
+            const handleLogout = () => {
+                localStorage.removeItem('user');
+                window.location.reload();
+            };
+
+            const handleCreateTask = async (taskData) => {
+                try {
+                    const result = await TaskManagementAPI.createTask(taskData);
+                    if (result.success) {
+                        setTasks(prev => [...prev, result.data]);
+                        setShowModal(false);
+                    }
+                } catch (error) {
+                    console.error('Failed to create task:', error);
+                }
+            };
+
+            const handleUpdateTask = async (taskId, updates) => {
+                try {
+                    const result = await TaskManagementAPI.updateTask(taskId, updates);
+                    if (result.success) {
+                        setTasks(prev => prev.map(t => t.id === taskId ? result.data : t));
+                        setEditingTask(null);
+                    }
+                } catch (error) {
+                    console.error('Failed to update task:', error);
+                }
+            };
+
+            const handleDeleteTask = async (taskId) => {
+                if (window.confirm('Are you sure you want to delete this task?')) {
+                    try {
+                        const result = await TaskManagementAPI.deleteTask(taskId);
+                        if (result.success) {
+                            setTasks(prev => prev.filter(t => t.id !== taskId));
+                        }
+                    } catch (error) {
+                        console.error('Failed to delete task:', error);
+                    }
+                }
+            };
+
+            const handleStatusChange = async (taskId, newStatus) => {
+                await handleUpdateTask(taskId, { status: newStatus });
+            };
+
+            const handleEmployeeClick = (employee) => {
+                setSelectedEmployee(employee);
+                setShowEmployeeModal(true);
+            };
+
+            const filteredTasks = tasks.filter(task => {
+                const matchesFilter = filter === 'all' || task.status === filter;
+                const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) ||
+                                   task.description.toLowerCase().includes(search.toLowerCase());
+                return matchesFilter && matchesSearch;
+            });
+
+            const stats = {
+                total: tasks.length,
+                pending: tasks.filter(t => t.status === 'pending').length,
+                inProgress: tasks.filter(t => t.status === 'in-progress').length,
+                completed: tasks.filter(t => t.status === 'completed').length
+            };
+
+            if (!user) {
+                return <div>Loading user data...</div>;
+            }
+
+            return (
+                <div className="min-h-screen bg-gray-50">
+                    {/* Header */}
+                    <header className="bg-white shadow-sm border-b">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex justify-between items-center h-16">
+                                <div className="flex items-center">
+                                    <h1 className="text-xl font-bold text-gray-900">TaskFlow Dashboard</h1>
+                                </div>
+                                
+                                <div className="flex items-center space-x-4">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="text-sm text-gray-700">{user.name}</span>
+                                        <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded capitalize">
+                                            {user.role}
+                                        </span>
+                                    </div>
+                                    <button
+                                        onClick={handleLogout}
+                                        className="flex items-center space-x-1 text-gray-500 hover:text-gray-700"
+                                    >
+                                        <span>Logout</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {/* Deadline Reminder */}
+                        <DeadlineReminder tasks={tasks} />
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            {/* Main Content - 2/3 width */}
+                            <div className="lg:col-span-2 space-y-8">
+                                {/* Stats - with navigation highlight */}
+                                <div className={`grid grid-cols-1 md:grid-cols-4 gap-6 ${navigationTarget === 'stats' ? 'navigation-highlight' : ''}`}>
+                                    {[
+                                        { label: 'Total Tasks', value: stats.total, icon: '📋', color: 'blue' },
+                                        { label: 'Pending', value: stats.pending, icon: '⏰', color: 'yellow' },
+                                        { label: 'In Progress', value: stats.inProgress, icon: '🔄', color: 'blue' },
+                                        { label: 'Completed', value: stats.completed, icon: '✅', color: 'green' }
+                                    ].map((stat, index) => (
+                                        <div 
+                                            key={index} 
+                                            className={`bg-white p-6 rounded-lg shadow-sm border fade-in ${navigationTarget === 'stats' ? 'blink-element' : ''}`}
+                                        >
+                                            <div className="flex items-center">
+                                                <div className={`bg-${stat.color}-100 p-3 rounded-lg`}>
+                                                    <span className={`text-${stat.color}-600`}>{stat.icon}</span>
+                                                </div>
+                                                <div className="ml-4">
+                                                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                                                    <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Controls - with navigation highlights */}
+                                <div className={`bg-white p-6 rounded-lg shadow-sm border ${navigationTarget === 'search' || navigationTarget === 'create' ? 'navigation-highlight' : ''}`}>
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+                                        <div className={`flex space-x-4 ${navigationTarget === 'search' ? 'blink-element' : ''}`}>
+                                            <div className="relative">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search tasks..."
+                                                    value={search}
+                                                    onChange={(e) => setSearch(e.target.value)}
+                                                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                                    🔍
+                                                </span>
+                                            </div>
+                                            
+                                            <select
+                                                value={filter}
+                                                onChange={(e) => setFilter(e.target.value)}
+                                                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            >
+                                                <option value="all">All Tasks</option>
+                                                <option value="pending">Pending</option>
+                                                <option value="in-progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <button
+                                            onClick={() => setShowModal(true)}
+                                            className={`flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${navigationTarget === 'create' ? 'blink-element' : ''}`}
+                                        >
+                                            <span>+</span>
+                                            <span>New Task</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Tasks Grid - with navigation highlight */}
+                                <div className={navigationTarget === 'tasks' ? 'navigation-highlight' : ''}>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-semibold text-gray-900">Tasks</h2>
+                                        <span className="text-sm text-gray-500">{filteredTasks.length} tasks</span>
+                                    </div>
+                                    
+                                    {loading ? (
+                                        <div className="text-center py-12">
+                                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                                            <p className="mt-4 text-gray-600">Loading tasks...</p>
+                                        </div>
+                                    ) : (
+                                        <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 ${navigationTarget === 'tasks' ? 'blink-element' : ''}`}>
+                                            {filteredTasks.map(task => (
+                                                <TaskCard
+                                                    key={task.id}
+                                                    task={task}
+                                                    onEdit={setEditingTask}
+                                                    onDelete={handleDeleteTask}
+                                                    onStatusChange={handleStatusChange}
+                                                    highlight={navigationTarget === 'tasks'}
+                                                />
+                                            ))}
+                                            
+                                            {filteredTasks.length === 0 && (
+                                                <div className="col-span-full text-center py-12">
+                                                    <span className="text-4xl mb-4">📝</span>
+                                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks found</h3>
+                                                    <p className="text-gray-600">Get started by creating your first task.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Employee Directory - 1/3 width */}
+                            <div className="lg:col-span-1">
+                                <EmployeeDirectory
+                                    employees={employeeData}
+                                    tasks={tasks}
+                                    onEmployeeClick={handleEmployeeClick}
+                                    navigationTarget={navigationTarget}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* AI Chatbot */}
+                    <AIChatbot 
+                        tasks={tasks}
+                        user={user}
+                        onShowTasks={() => setNavigationTarget('tasks')}
+                        onCreateTask={() => setShowModal(true)}
+                        onShowDeadlines={() => {}}
+                        onShowEmployees={() => setNavigationTarget('employees')}
+                    />
+
+                    {/* Employee Tasks Modal */}
+                    {showEmployeeModal && (
+                        <EmployeeTasksModal
+                            employee={selectedEmployee}
+                            tasks={tasks}
+                            onClose={() => setShowEmployeeModal(false)}
+                        />
+                    )}
+
+                    {/* Task Modals */}
+                    {showModal && (
+                        <TaskModal
+                            onClose={() => setShowModal(false)}
+                            onSave={handleCreateTask}
+                        />
+                    )}
+                    
+                    {editingTask && (
+                        <TaskModal
+                            task={editingTask}
+                            onClose={() => setEditingTask(null)}
+                            onSave={(updates) => handleUpdateTask(editingTask.id, updates)}
+                        />
+                    )}
+                </div>
+            );
+        };
+
+        // Main App Component
+        const App = () => {
+            const [user, setUser] = useState(null);
+
+            useEffect(() => {
+                const savedUser = localStorage.getItem('user');
+                if (savedUser) {
+                    setUser(JSON.parse(savedUser));
+                }
+            }, []);
+
+            if (!user) {
+                return <LoginPage onLogin={setUser} />;
+            }
+
+            return <Dashboard />;
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
